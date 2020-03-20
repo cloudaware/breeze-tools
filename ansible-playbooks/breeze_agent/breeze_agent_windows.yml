@@ -1,0 +1,16 @@
+---
+- hosts: windows
+  vars:
+    windows_agent: windows-breeze-agent.exe
+
+  tasks:
+  - name: Put installation file
+    win_copy: src=files/{{ windows_agent }} dest=c:\\breeze-agent.exe
+
+  - name: check if breeze already installed
+    win_stat: path="c:\\Program Files\\Breeze\\app.bat"
+    register: file_info
+
+  - name: Install breeze agent
+    raw: 'c:\\breeze-agent.exe'
+    when: not file_info.stat.exists

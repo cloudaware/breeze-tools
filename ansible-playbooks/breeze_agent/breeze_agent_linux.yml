@@ -1,0 +1,16 @@
+---
+- hosts: linux
+  vars:
+    linux_agent: linux-breeze-agent.tgz
+
+  become: yes
+
+  tasks:
+  - name: Put installation file to the /tmp directory
+    copy: src=files/{{ linux_agent }} dest=/tmp/breeze-agent.tgz
+
+  - name: Unarchive 'breeze-agent.tgz'
+    unarchive: src=/tmp/breeze-agent.tgz dest=/opt creates=/opt/breeze-agent/app.rb
+
+  - name: Create cron job
+    lineinfile: dest=/etc/cron.d/breeze-agent line="*/15 * * * * root /opt/breeze-agent/app.sh >>/var/log/breeze-agent.log 2>&1" owner=root group=root mode=0644 create=yes
