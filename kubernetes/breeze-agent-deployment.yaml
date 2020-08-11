@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeze-agent
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-agent
+    app.kubernetes.io/version: v1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-agent
+        app.kubernetes.io/version: v1.0
+    spec:
+      volumes:
+      - name: breeze-data
+        emptyDir: {}
+      initContainers:
+      - name: breeze-agent-init
+        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
+        imagePullPolicy: Always
+        args: ["get-node-tags.py"]
+        volumeMounts:
+        - name: breeze-data
+          mountPath: /breeze-data
+      containers:
+      - name: breeze-agent
+        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: breeze-data
+          mountPath: /breeze-data
+        env:
+          - name: BREEZE_RUNTIME
+            value: kubernetes
+          - name: BREEZE_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: BREEZE_K8S_TUNHUB_CLIENT
+            value: enabled
+        securityContext:
+          privileged: true
+      imagePullSecrets:
+      - name: IMAGE_PULL_SECRETS_NAME

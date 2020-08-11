@@ -1,0 +1,16 @@
+FROM ubuntu:20.04
+
+# arguments
+ARG log_level=1
+
+# install required packages
+RUN apt-get update && \
+    apt-get install -y iptables openvpn && \
+    rm -rf /var/lib/apt/lists/*
+
+# configure breeze agent
+COPY ./breeze-agent/ /opt/breeze-agent/
+COPY ./bin/breeze-daemon /opt/breeze-agent
+RUN sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
+
+ENTRYPOINT [ "/opt/breeze-agent/breeze-daemon" ]
