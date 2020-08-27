@@ -22,7 +22,7 @@ spec:
         emptyDir: {}
       initContainers:
       - name: breeze-agent-init
-        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
+        image: CONTAINER_REGISTRY_URI/breeze-agent-init:latest
         imagePullPolicy: Always
         args: ["get-node-tags.py"]
         volumeMounts:
@@ -30,7 +30,7 @@ spec:
           mountPath: /breeze-data
       containers:
       - name: breeze-agent
-        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
+        image: CONTAINER_REGISTRY_URI/breeze-agent:latest
         imagePullPolicy: Always
         volumeMounts:
         - name: breeze-data
@@ -47,4 +47,4 @@ spec:
         securityContext:
           privileged: true
       imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME
+      - name: IMAGE_PULL_SECRET_NAME
