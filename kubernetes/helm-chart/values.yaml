@@ -1,0 +1,14 @@
+version: v1.0.0
+# Edit platform value. Possible values: eks, aks
+platform: PLATFORM
+# Edit container registry hostname and secrets name
+containerRegistryHostname: CONTAINER_REGISTRY_HOSTNAME
+containerRegistrySecretsName: CONTAINER_REGISTRY_SECRETS_NAME
+# Edit resource limits
+resources:
+    requests:
+        memory: "64Mi"
+        cpu: "250m"
+    limits:
+        memory: "128Mi"
+        cpu: "500m"

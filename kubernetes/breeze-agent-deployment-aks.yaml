@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeze-agent
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-agent
+    app.kubernetes.io/version: v1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-agent
+        app.kubernetes.io/version: v1.0
+    spec:
+      volumes:
+      - name: dev-tun
+        hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+      containers:
+      - name: breeze-agent
+        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: dev-tun
+          mountPath: /dev/net/tun
+        env:
+          - name: BREEZE_RUNTIME
+            value: kubernetes
+          - name: BREEZE_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: BREEZE_K8S_TUNHUB_CLIENT
+            value: enabled
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN"]
+      imagePullSecrets:
+      - name: IMAGE_PULL_SECRETS_NAME
