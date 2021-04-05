@@ -8,9 +8,15 @@ RUN apt-get update && \
     apt-get install -y pciutils iptables openvpn && \
     rm -rf /var/lib/apt/lists/*
 
+# Add Tini
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+ENTRYPOINT ["/tini", "--"]
+
 # configure breeze agent
 COPY ./breeze-agent/ /opt/breeze-agent/
 COPY ./bin/breeze-daemon /opt/breeze-agent
 RUN sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
 
-ENTRYPOINT [ "/opt/breeze-agent/breeze-daemon" ]
+CMD [ "/opt/breeze-agent/breeze-daemon" ]
