@@ -49,5 +49,3 @@ spec:
           privileged: false
           capabilities:
             add: ["NET_ADMIN"]
-      imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME

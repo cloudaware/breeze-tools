@@ -5,7 +5,7 @@ ARG log_level=1
 
 # install required packages
 RUN apt-get update && \
-    apt-get install -y pciutils iptables openvpn && \
+    apt-get install -y pciutils virt-what iptables openvpn && \
     rm -rf /var/lib/apt/lists/*
 
 # Add Tini
