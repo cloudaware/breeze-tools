@@ -1,0 +1,33 @@
+apiVersion: apps/v1beta2
+kind: DaemonSet
+metadata:
+  name: ds-breeze-agent
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: breeze-agent
+  template:
+    metadata:
+      labels:
+        app: breeze-agent
+    spec:
+      containers:
+        - name: breeze-agent
+          image: DOCKER_SERVER_HOSTNAME/IMAGE_NAME:latest
+          command: ["/bin/bash", "-c"]
+          args: ["/tmp/breeze-agent/install.sh && chroot /var/root /opt/breeze-agent/breeze-daemon.rb -c /opt/breeze-agent/app.sh"]
+          volumeMounts:
+          - name: host-fs-opt
+            mountPath: /opt
+          - name: host-fs-root
+            mountPath: /var/root
+      volumes:
+      - name: host-fs-opt
+        hostPath:
+          path: /opt
+      - name: host-fs-root
+        hostPath:
+          path: /
+      imagePullSecrets:
+      - name: DOCKER_SERVER_SECRETS
