@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: breeze-agent
-          image: DOCKER_SERVER_HOSTNAME/IMAGE_NAME:latest
+          image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
           command: ["/bin/bash", "-c"]
           args: ["/tmp/breeze-agent/install.sh && chroot /var/root /opt/breeze-agent/breeze-daemon.rb -c /opt/breeze-agent/app.sh"]
           volumeMounts:
@@ -30,4 +30,4 @@ spec:
         hostPath:
           path: /
       imagePullSecrets:
-      - name: DOCKER_SERVER_SECRETS
+      - name: IMAGE_PULL_SECRETS_NAME

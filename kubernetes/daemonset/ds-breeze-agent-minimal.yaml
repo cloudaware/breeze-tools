@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: breeze-agent
-          image: DOCKER_SERVER_HOSTNAME/IMAGE_NAME:latest
+          image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
           command: ["/bin/bash", "-c"]
           args: ["sleep 3600"]
           volumeMounts:
@@ -77,4 +77,4 @@ spec:
         hostPath:
           path: /usr
       imagePullSecrets:
-      - name: DOCKER_SERVER_SECRETS
+      - name: IMAGE_PULL_SECRETS_NAME

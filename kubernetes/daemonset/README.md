@@ -35,23 +35,22 @@ Container run two commands:
 1. Build the Docker image:
 
     ```bash
-    docker build -t IMAGE_NAME .
+    docker build -t breeze-agent-ds .
     ```
 
 1. Push the image to your **private** Docker container registry:
 
     ```bash
-    docker tag IMAGE_NAME:latest DOCKER_SERVER_HOSTNAME/IMAGE_NAME:latest
-    docker push IMAGE_NAME:latest DOCKER_SERVER_HOSTNAME/IMAGE_NAME:latest
+    docker tag breeze-agent-ds:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
+    docker push breeze-agent-ds:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
     ```
 
 # Run DaemonSet
 
 1. Edit the DaemonSet configuration file `ds-breeze-agent.yaml` and replace the next placeholders with the valid values:
 
-    * `DOCKER_SERVER_HOSTNAME`
-    * `IMAGE_NAME`
-    * `DOCKER_SERVER_SECRETS`
+    * `CONTAINER_REGISTRY_HOSTNAME`
+    * `IMAGE_PULL_SECRETS_NAME`
 
 1. Create the new DaemonSet:
 
