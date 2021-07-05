@@ -16,7 +16,7 @@ ENTRYPOINT ["/tmp/tini", "--"]
 
 # configure breeze agent
 COPY ./breeze-agent/ /tmp/breeze-agent/
-COPY ./bin/breeze-daemon /tmp/breeze-agent/
+COPY ./bin/breeze-daemon /tmp/breeze-agent/breeze-daemon
 RUN sed -i "/log_level/s/2/${log_level}/" /tmp/breeze-agent/etc/agent.conf
 
 CMD [ "/tmp/breeze-agent/breeze-daemon" ]
