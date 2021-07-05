@@ -14,14 +14,22 @@ spec:
     spec:
       containers:
         - name: breeze-agent
-          image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
+          image: 241106941283.dkr.ecr.us-east-2.amazonaws.com/breeze-agent:ds
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c"]
-          args: ["/tmp/breeze-agent/install.sh && chroot /var/root /opt/breeze-agent/breeze-daemon.rb -c /opt/breeze-agent/app.sh"]
+          args: ["cp -R /{tmp,opt}/breeze-agent/ && cp /{tmp,opt}/tini && chroot /var/root /opt/tini -- /opt/breeze-agent/breeze-daemon"]
+          env:
+          - name: BREEZE_RUN_INTERVAL
+            value: "2"
           volumeMounts:
           - name: host-fs-opt
             mountPath: /opt
           - name: host-fs-root
             mountPath: /var/root
+          - name: host-mnt
+            mountPath: /var/root/mnt
+          # securityContext:
+          #   privileged: true
       volumes:
       - name: host-fs-opt
         hostPath:
@@ -29,5 +37,8 @@ spec:
       - name: host-fs-root
         hostPath:
           path: /
+      - name: host-mnt
+        hostPath:
+          path: /mnt
       imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME
+      - name: ecrcred
