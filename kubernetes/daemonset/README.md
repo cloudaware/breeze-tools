@@ -9,19 +9,19 @@
 
 # Overview
 
-This document describes how to create the DaemonSet to run the Breeze agent on every node of the Kubernetes cluster.
+This document describes how to create a DaemonSet to run the Breeze agent on every node of a Kubernetes cluster.
 
 # How it works
 
-DaemonSet start the container with Breeze agent installer. The container have two bind mounts:
+DaemonSet starts the container with Breeze agent installer. The container has two bind mounts:
 
 * `host:/opt > container:/opt` - used for the Breeze agent installation from container to the host filesystem
 * `host:/ > container:/var/root` - used for the agent launching in the chroot environment
 
-Container run two commands:
+Container runs two commands:
 
 1. Install the Breeze agent to the `/opt` directory
-2. Run the simple daemon which run the Breeze agent every 15 minutes
+2. Run a simple daemon which runs Breeze agent every 15 minutes
 
 # Create Docker image
 

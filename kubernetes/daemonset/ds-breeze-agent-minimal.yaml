@@ -15,8 +15,9 @@ spec:
       containers:
         - name: breeze-agent
           image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c"]
-          args: ["sleep 3600"]
+          args: ["cp -R /{tmp,opt}/breeze-agent && cp /{tmp,opt}/tini && chroot /var/root /opt/tini -- /opt/breeze-agent/breeze-daemon"]
           volumeMounts:
           - name: host-fs-opt
             mountPath: /opt
@@ -42,6 +43,12 @@ spec:
             mountPath: /var/root/tmp
           - name: host-fs-usr
             mountPath: /var/root/usr
+          - name: host-etc
+            mountPath: /var/root/etc
+          - name: host-mnt
+            mountPath: /var/root/mnt
+          - name: host-var
+            mountPath: /var/root/var
       volumes:
       - name: host-fs-bin
         hostPath:
@@ -76,5 +83,15 @@ spec:
       - name: host-fs-usr
         hostPath:
           path: /usr
+      - name: host-etc
+        hostPath:
+          path: /etc
+      - name: host-mnt
+        hostPath:
+          path: /mnt
+      - name: host-var
+        hostPath:
+          path: /var
       imagePullSecrets:
       - name: IMAGE_PULL_SECRETS_NAME
+      
