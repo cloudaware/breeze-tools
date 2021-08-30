@@ -31,7 +31,7 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
 1. If you use EKS, also build and push Breeze init image:
 
     ```
-    docker build -t breeze-agent-init -f Dockerfile breeze-agent-init .
+    docker build -t breeze-agent-init -f Dockerfile.breeze-agent-init .
     docker tag breeze-agent-init:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
     docker push breeze-agent-init:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
     
