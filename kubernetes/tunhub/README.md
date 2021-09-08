@@ -45,6 +45,21 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     * `CONTAINER_REGISTRY_HOSTNAME`
     * `IMAGE_PULL_SECRETS_NAME`
 
+1. Ensure that node group IAM role has the `ec2:DescribeTags` action or attach the next policy to the node group IAM role:
+
+   ```
+   {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "ec2:DescribeTags",
+                "Resource": "*"
+            }
+        ]
+    }
+    ```
+
 1. Apply the configuration:
 
     ```bash
