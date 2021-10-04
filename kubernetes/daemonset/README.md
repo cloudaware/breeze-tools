@@ -18,7 +18,7 @@ DaemonSet starts the container with Breeze agent installer. The container has tw
 * `host:/opt > container:/opt`
 * `host:/etc > container:/etc`
 
-Breeze agent runs on a host machine. A cronjob runs the agent on schedule (every 15 mins).
+Breeze agent is being run on the host machine. A cronjob runs the agent on schedule (every 15 mins).
 
 # Create Docker image
 
