@@ -15,13 +15,10 @@ This document describes how to create a DaemonSet to run the Breeze agent on eve
 
 DaemonSet starts the container with Breeze agent installer. The container has two bind mounts:
 
-* `host:/opt > container:/opt` - used for the Breeze agent installation from container to the host filesystem
-* `host:/ > container:/var/root` - used for the agent launching in the chroot environment
+* `host:/opt > container:/opt`
+* `host:/etc > container:/etc`
 
-Container runs two commands:
-
-1. Install the Breeze agent to the `/opt` directory
-2. Run a simple daemon which runs Breeze agent every 15 minutes
+Breeze agent runs on a host machine. A cronjob runs the agent on schedule (every 15 mins).
 
 # Create Docker image
 

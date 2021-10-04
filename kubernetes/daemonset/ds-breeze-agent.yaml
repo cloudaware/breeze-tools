@@ -16,22 +16,17 @@ spec:
         - name: breeze-agent
           image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
           imagePullPolicy: Always
-          command: ["/bin/bash", "-c"]
-          args: ["cp -R /{tmp,opt}/breeze-agent && cp /{tmp,opt}/tini && chroot /var/root /opt/tini -- /opt/breeze-agent/breeze-daemon"]
-          env:
-          - name: BREEZE_RUN_INTERVAL
-            value: "2"
           volumeMounts:
           - name: host-fs-opt
             mountPath: /opt
-          - name: host-fs-root
-            mountPath: /var/root
+          - name: host-fs-etc
+            mountPath: /etc
       volumes:
       - name: host-fs-opt
         hostPath:
           path: /opt
-      - name: host-fs-root
+      - name: host-fs-etc
         hostPath:
-          path: /
+          path: /etc
       imagePullSecrets:
       - name: IMAGE_PULL_SECRETS_NAME
