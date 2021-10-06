@@ -21,6 +21,8 @@ spec:
             mountPath: /opt
           - name: host-fs-etc
             mountPath: /etc
+          - name: host-fs-var-log
+            mountPath: /var/log
       volumes:
       - name: host-fs-opt
         hostPath:
@@ -28,5 +30,8 @@ spec:
       - name: host-fs-etc
         hostPath:
           path: /etc
+      - name: host-fs-var-log
+        hostPath:
+          path: /var/log
       imagePullSecrets:
       - name: IMAGE_PULL_SECRETS_NAME
