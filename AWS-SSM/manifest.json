@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "2.0",
+  "version": "PACKAGE_VERSION",
+  "publisher": "cloudaware",
+  "packages": {
+    "amazon": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "centos": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "redhat": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "oraclelinux": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "debian": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "fedora": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "ubuntu": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "sles": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "windows": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-windows.zip"
+        }
+      }
+    }
+  },
+  "files": {
+    "breeze-agent-linux.zip": {
+      "checksums": {
+        "sha256": "ARCHIVE_CHECKSUM"
+      }
+    },
+    "breeze-agent-windows.zip": {
+      "checksums": {
+        "sha256": "ARCHIVE_CHECKSUM"
+      }
+    }
+  }
+}
