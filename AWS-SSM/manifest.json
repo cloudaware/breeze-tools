@@ -24,14 +24,7 @@
         }
       }
     },
-    "oraclelinux": {
-      "_any": {
-        "x86_64": {
-          "file": "breeze-agent-linux.zip"
-        }
-      }
-    },
-    "debian": {
+    "oracle": {
       "_any": {
         "x86_64": {
           "file": "breeze-agent-linux.zip"
@@ -52,7 +45,21 @@
         }
       }
     },
-    "sles": {
+    "suse": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "opensuse": {
+      "_any": {
+        "x86_64": {
+          "file": "breeze-agent-linux.zip"
+        }
+      }
+    },
+    "opensuseleap": {
       "_any": {
         "x86_64": {
           "file": "breeze-agent-linux.zip"
