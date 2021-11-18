@@ -49,3 +49,12 @@ spec:
           privileged: false
           capabilities:
             add: ["NET_ADMIN"]
+        readinessProbe:
+          exec:
+            command:
+            - grep
+            - zcat
+            - "/proc/net/dev"
+          initialDelaySeconds: 900
+          periodSeconds: 60
+          failureThreshold: 60

@@ -17,6 +17,7 @@ ENTRYPOINT ["/tini", "--"]
 # configure breeze agent
 COPY ./breeze-agent/ /opt/breeze-agent/
 COPY ./bin/breeze-daemon /opt/breeze-agent
-RUN sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh; sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
 
-CMD [ "/opt/breeze-agent/breeze-daemon" ]
+CMD [ "./entrypoint.sh" ]

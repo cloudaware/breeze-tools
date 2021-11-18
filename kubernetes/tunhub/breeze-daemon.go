@@ -15,6 +15,7 @@ const (
 )
 
 func main() {
+	os.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	appPath := os.Getenv("BREEZE_APP_PATH")
 	if appPath == "" {
 		appPath = DEFAULT_PATH
