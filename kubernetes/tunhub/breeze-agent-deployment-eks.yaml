@@ -28,7 +28,6 @@ spec:
       - name: breeze-agent-init
         image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
         imagePullPolicy: Always
-        args: ["get-node-tags.py"]
         volumeMounts:
         - name: breeze-data
           mountPath: /breeze-data
@@ -70,5 +69,5 @@ spec:
           initialDelaySeconds: 900
           periodSeconds: 60
           failureThreshold: 60
-      imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME
+      # imagePullSecrets:
+      # - name: IMAGE_PULL_SECRETS_NAME

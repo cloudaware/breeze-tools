@@ -43,7 +43,7 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
 1. Edit the deployment YAML file `breeze-agent-deployment-eks.yaml` and replace the next placeholders with the valid values:
 
     * `CONTAINER_REGISTRY_HOSTNAME`
-    * `IMAGE_PULL_SECRETS_NAME`
+    * `IMAGE_PULL_SECRETS_NAME` (optional)
 
 1. Ensure that node group IAM role has the `ec2:DescribeTags` action or attach the next policy to the node group IAM role:
 
