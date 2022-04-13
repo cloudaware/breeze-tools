@@ -9,7 +9,10 @@ response = requests.put(
 if response.status_code == 200:
     token = response.content.decode()
 else:
-    raise Exception("Failed to get IDMSv2 token")
+    raise Exception('Failed to get IDMSv2 token')
+
+region, instance_id = None, None
+errors = []
 
 response = requests.get(
     'http://169.254.169.254/latest/meta-data/placement/region',
@@ -17,6 +20,8 @@ response = requests.get(
 )
 if response.status_code == 200:
     region = response.content.decode()
+else:
+    errors.append(f'Failed to get region: {response.text}')
 
 response = requests.get(
     'http://169.254.169.254/latest/meta-data/instance-id',
@@ -24,9 +29,11 @@ response = requests.get(
 )
 if response.status_code == 200:
     instance_id = response.content.decode()
+else:
+    errors.append(f'Failed to get instnce ID: {response.text}')
 
 if not all([region, instance_id]):
-    raise Exception("Failed to get region and/or instance_id from IMDSv2")
+    raise Exception(f'Errors: {errors}')
 
 client = boto3.client('ec2', region_name=region)
 response = client.describe_tags(
