@@ -17,7 +17,7 @@ spec:
         app.kubernetes.io/name: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Values.version | default .Chart.AppVersion}}
     spec:
-      serviceAccountName: {{ template "breeze-agent.serviceAccountName" . }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
       volumes:
       - name: dev-tun
         hostPath:
