@@ -26,3 +26,4 @@ roleRef:
   kind: ClusterRole
   name: node-reader
   apiGroup: ""
+{{- end -}}
