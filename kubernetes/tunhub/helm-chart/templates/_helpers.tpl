@@ -1,7 +1,7 @@
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "breeze-agent.clusterRoleName" -}}
+{{- define "breeze-agent.serviceAccount" -}}
 {{- if .Values.serviceAccount.create -}}
 {{ default .Values.serviceAccount.name }}
 {{- else -}}
