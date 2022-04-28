@@ -1,0 +1,15 @@
+{{- if .Values.clusterRole.create -}}
+apiVersion: v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace | quote }}
+  {{- if .Values.clusterRole.annotations }}
+  annotations: {{ toYaml .Values.clusterRole.annotations | nindent 4 }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    helm.sh/chart: {{ .Chart.AppVersion }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
