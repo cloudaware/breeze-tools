@@ -8,14 +8,3 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
-
-{{/*
-Create the name of the cluster role to use
-*/}}
-{{- define "breeze-agent.clusterRole" -}}
-{{- if .Values.clusterRole.create -}}
-{{ default .Values.clusterRole.name }}
-{{- else -}}
-    {{ default "default" .Values.clusterRole.name }}
-{{- end -}}
-{{- end -}}
