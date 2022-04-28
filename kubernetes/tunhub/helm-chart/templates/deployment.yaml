@@ -18,6 +18,7 @@ spec:
         app.kubernetes.io/version: {{ .Values.version | default .Chart.AppVersion}}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      clusterRoleName: {{ .Values.clusterRole.name }}
       volumes:
       - name: dev-tun
         hostPath:
