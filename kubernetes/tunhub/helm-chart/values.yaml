@@ -20,3 +20,11 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   name:
+
+clusterRole:
+  # Specifies whether a cluster role should be created
+  create: true
+  # Specifies annotations for this cluster role
+  annotations: {}
+  # The name of the service account to use.
+  name:
