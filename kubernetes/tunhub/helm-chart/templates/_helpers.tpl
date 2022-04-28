@@ -7,6 +7,7 @@ Create the name of the service account to use
 {{- else -}}
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
+{{- end -}}
 {{/*
 Create the name of the cluster role to use
 */}}
@@ -15,4 +16,5 @@ Create the name of the cluster role to use
 {{ default .Values.clusterRoleName.name }}
 {{- else -}}
     {{ default "default" .Values.clusterRoleName.name }}
+{{- end -}}
 {{- end -}}
