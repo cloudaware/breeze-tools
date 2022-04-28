@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudaware_test-binding
+subjects:
+- kind: User
+  name: cloudaware_test
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: ""
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudaware_test-binding2
+subjects:
+- kind: User
+  name: cloudaware_test
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: node-reader
+  apiGroup: ""
