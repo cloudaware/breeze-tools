@@ -1,11 +1,10 @@
-{{- if .Values.clusterRole.create -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: cloudaware_test-binding
+  name: {{ .Release.Name }}-view
 subjects:
 - kind: User
-  name: cloudaware_test
+  name: {{ .Release.Name }}
   namespace: default
   apiGroup: ""
 roleRef:
@@ -16,14 +15,13 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: cloudaware_test-binding2
+  name: {{ .Release.Name }}-node-reader
 subjects:
 - kind: User
-  name: cloudaware_test
+  name: {{ .Release.Name }}
   namespace: default
   apiGroup: ""
 roleRef:
   kind: ClusterRole
-  name: node-reader
+  name: {{ .Release.Name }}-node-reader
   apiGroup: ""
-{{- end -}}
