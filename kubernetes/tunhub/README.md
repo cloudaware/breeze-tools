@@ -45,7 +45,15 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     * `CONTAINER_REGISTRY_HOSTNAME`
     * `IMAGE_PULL_SECRETS_NAME` (optional)
 
-1. Ensure that node group IAM role has the `ec2:DescribeTags` action or attach the next policy to the node group IAM role:
+2. Make sure that the following AWS metadata endpoints are reachable:
+```
+latest/api/token
+latest/dynamic/instance-identity/document
+latest/meta-data/services/partition
+latest/meta-data/placement/region
+```
+
+3. Ensure that node group IAM role has the `ec2:DescribeTags` action or attach the next policy to the node group IAM role:
 
    ```
    {
@@ -60,7 +68,7 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     }
     ```
 
-1. Apply the configuration:
+4. Apply the configuration:
 
     ```bash
     kubectl create -f breeze-agent-deployment-eks.yaml
@@ -70,10 +78,10 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
 
     * `CONTAINER_REGISTRY_HOSTNAME`
 
-1. Set up the AKS to ACR integration:
+2. Set up the AKS to ACR integration:
 https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration
 
-1. Apply the configuration:
+3. Apply the configuration:
 
     ```bash
     kubectl create -f breeze-agent-deployment-aks.yaml
