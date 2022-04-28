@@ -16,4 +16,3 @@ Create the name of the cluster role to use
 {{- else -}}
     {{ default "default" .Values.clusterRoleName.name }}
 {{- end -}}
-{{- end -}}
