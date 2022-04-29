@@ -14,7 +14,7 @@ metadata:
 subjects:
 - kind: User
   name: cloudaware
-  namespace: monitoring
+  namespace: default
   apiGroup: ""
 roleRef:
   kind: ClusterRole
