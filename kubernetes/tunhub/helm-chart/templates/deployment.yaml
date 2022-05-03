@@ -30,7 +30,6 @@ spec:
       - name: {{ .Release.Name }}-init
         image: {{ .Values.containerRegistryHostname }}/breeze-agent-init:latest
         imagePullPolicy: Always
-        args: ["get-node-tags.py"]
         volumeMounts:
         - name: breeze-data
           mountPath: /breeze-data
