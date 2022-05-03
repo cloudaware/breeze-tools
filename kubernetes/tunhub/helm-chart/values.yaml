@@ -12,3 +12,11 @@ resources:
     limits:
         memory: "128Mi"
         cpu: "500m"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Specifies annotations for this service account
+  annotations: {}
+  # The name of the service account to use.
+  name:

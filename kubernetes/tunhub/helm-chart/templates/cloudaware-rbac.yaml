@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudaware-reader
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudaware-binding
+subjects:
+- kind: User
+  name: cloudaware
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: cloudaware-reader
+  apiGroup: ""
