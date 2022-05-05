@@ -2,10 +2,13 @@ import requests
 import boto3
 import json
 
+from requests.exceptions import Timeout
+
 def get_metadata(path, token, errors):
     response = requests.get(
         f'http://169.254.169.254/{path}',
-        headers={"X-aws-ec2-metadata-token": token}
+        headers={"X-aws-ec2-metadata-token": token},
+        timeout=10
     )
     if response.status_code == 200:
         return response.content.decode()
@@ -13,21 +16,25 @@ def get_metadata(path, token, errors):
         errors.append(f'Failed to call {path}: {response.text}')
         return None
 
-response = requests.put(
-    'http://169.254.169.254/latest/api/token',
-    headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"}
-)
-if response.status_code == 200:
-    token = response.content.decode()
-else:
-    raise Exception('Failed to get IDMSv2 token')
+try:
+    response = requests.put(
+        'http://169.254.169.254/latest/api/token',
+        headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"},
+        timeout=10
+    )
+    if response.status_code == 200:
+        token = response.content.decode()
+    else:
+        raise Exception('Failed to get IDMSv2 token')
 
-errors = []
+    errors = []
 
-region = get_metadata('latest/meta-data/placement/region', token, errors)
-instance_id = get_metadata('latest/meta-data/instance-id', token, errors)
-document = get_metadata('latest/dynamic/instance-identity/document', token, errors)
-partition = get_metadata('latest/meta-data/services/partition', token, errors)
+    region = get_metadata('latest/meta-data/placement/region', token, errors)
+    instance_id = get_metadata('latest/meta-data/instance-id', token, errors)
+    document = get_metadata('latest/dynamic/instance-identity/document', token, errors)
+    partition = get_metadata('latest/meta-data/services/partition', token, errors)
+except Timeout:
+    raise Exception('A request to AWS metadata has timed out.')
 
 if not all([region, instance_id, document, partition]):
     raise Exception(f'Errors: {errors}')
