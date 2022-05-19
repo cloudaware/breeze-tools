@@ -5,7 +5,7 @@ metadata:
   namespace: default
 data:
   breeze-tags: |
-    eks_cluster_arn=<CLUSTER_ARN>
+    eks_cluster_arn=<EKS_CLUSTER_ARN>
 ---
 apiVersion: apps/v1
 kind: Deployment
