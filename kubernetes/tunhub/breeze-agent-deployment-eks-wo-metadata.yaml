@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-config
+  namespace: default
+data:
+  breeze-tags: |
+    eks_cluster_arn=<CLUSTER_ARN>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeze-agent
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-agent
+    app.kubernetes.io/version: v1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-agent
+        app.kubernetes.io/version: v1.0
+    spec:
+      volumes:
+      - name: breeze-config
+        configMap:
+          name: breeze-config
+      - name: dev-tun
+        hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+      containers:
+      - name: breeze-agent
+        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: breeze-config
+          mountPath: /opt/breeze-agent/etc/tags
+          subPath: breeze-tags
+        - name: dev-tun
+          mountPath: /dev/net/tun
+        env:
+          - name: BREEZE_RUNTIME
+            value: kubernetes
+          - name: BREEZE_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: BREEZE_K8S_TUNHUB_CLIENT
+            value: enabled
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN"]
+        readinessProbe:
+          exec:
+            command:
+            - grep
+            - zcat
+            - "/proc/net/dev"
+          initialDelaySeconds: 900
+          periodSeconds: 60
+          failureThreshold: 60
+      # imagePullSecrets:
+      # - name: IMAGE_PULL_SECRETS_NAME

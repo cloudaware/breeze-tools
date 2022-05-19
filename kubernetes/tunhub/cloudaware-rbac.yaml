@@ -1,0 +1,36 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudaware-node-reader
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudaware-node-reader-binding
+subjects:
+- kind: User
+  name: cloudaware
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: cloudaware-node-reader
+  apiGroup: ""
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudaware-view-binding
+subjects:
+- kind: User
+  name: cloudaware
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: ""

@@ -73,6 +73,18 @@ latest/meta-data/placement/region
     ```bash
     kubectl create -f breeze-agent-deployment-eks.yaml
     ```
+
+5. If access to metadata endpoints is forbidden Edit the deployment YAML file `breeze-agent-deployment-eks-wo-metadata.yaml` replace the next placeholders with the valid values:
+
+    * `CONTAINER_REGISTRY_HOSTNAME`
+    * `EKS_CLUSTER_ARN`
+    * `IMAGE_PULL_SECRETS_NAME` (optional)
+
+and apply the configuration:
+```bash
+kubectl create -f breeze-agent-deployment-eks-wo-metadata.yaml
+```
+
 ## AKS:
 1. Edit the deployment YAML file `breeze-agent-deployment-aks.yaml` and replace the next placeholders with the valid values:
 
