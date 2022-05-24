@@ -17,13 +17,14 @@ spec:
         app.kubernetes.io/name: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Values.version | default .Chart.AppVersion}}
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      serviceAccountName: {{ template "breeze-agent.serviceAccount" . }}
       volumes:
       - name: dev-tun
         hostPath:
           path: /dev/net/tun
           type: CharDevice
       {{- if eq .Values.platform "eks"}}
+      {{- if .Values.eksMetadataAccess }}
       - name: breeze-data
         emptyDir: {}
       initContainers:
@@ -33,6 +34,11 @@ spec:
         volumeMounts:
         - name: breeze-data
           mountPath: /breeze-data
+      {{- else }}
+      - name: breeze-config
+        configMap:
+          name: breeze-config
+      {{- end }}
       {{- end }}
       containers:
       - name: {{ .Release.Name }}
@@ -49,8 +55,14 @@ spec:
         - name: dev-tun
           mountPath: /dev/net/tun
         {{- if eq .Values.platform "eks"}}
+        {{- if .Values.eksMetadataAccess }}
         - name: breeze-data
           mountPath: /breeze-data
+        {{- else }}
+        - name: breeze-config
+          mountPath: /opt/breeze-agent/etc/tags
+          subPath: breeze-tags
+        {{- end }}
         {{- end }}
         env:
           - name: BREEZE_RUNTIME
@@ -74,5 +86,5 @@ spec:
           initialDelaySeconds: 900
           periodSeconds: 60
           failureThreshold: 60
-      imagePullSecrets:
-      - name: {{ .Values.containerRegistrySecretsName }}
+        # imagePullSecrets:
+        # - name: {{ .Values.containerRegistrySecretsName }}

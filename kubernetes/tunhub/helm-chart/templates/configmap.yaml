@@ -1,0 +1,10 @@
+{{- if and (eq .Values.platform "eks") (not .Values.eksMetadataAccess) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-config
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  breeze-tags: |
+{{ printf "eks.cluster.arn=%s" .Values.eksClusterArn | indent 4 }}
+{{- end }}

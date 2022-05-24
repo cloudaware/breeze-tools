@@ -1,9 +1,18 @@
-version: v1.0.0
+version: v1.1.0
+
 # Edit platform value. Possible values: eks, aks
-platform: PLATFORM
+platform: eks
+
+# Required if platform=eks
+eksMetadataAccess: true
+
+# Required if platform=eks and eksMetadataAccess=false
+eksClusterArn: ""
+
 # Edit container registry hostname and secrets name
 containerRegistryHostname: CONTAINER_REGISTRY_HOSTNAME
-containerRegistrySecretsName: CONTAINER_REGISTRY_SECRETS_NAME
+# containerRegistrySecretsName: CONTAINER_REGISTRY_SECRETS_NAME
+
 # Edit resource limits
 resources:
     requests:
@@ -14,9 +23,9 @@ resources:
         cpu: "500m"
 
 serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Specifies annotations for this service account
-  annotations: {}
-  # The name of the service account to use.
-  name:
+    # Specifies whether a service account should be created
+    create: true
+    # Specifies annotations for this service account
+    annotations: {}
+    # The name of the service account to use.
+    name: ""
