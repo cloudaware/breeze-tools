@@ -7,6 +7,51 @@ data:
   breeze-tags: |
     eks.cluster.arn=<EKS_CLUSTER_ARN>
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-entrypoint
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+
+    ERRORS=0
+
+    echo "Checking prerequisites..."
+
+    # check if node-tags file on breeze-data volume is mounted for EKS
+    if ! $(env | grep -qF 'cluster.arn' /opt/breeze-agent/etc/tags); then
+        echo "Running EKS specific checks..."
+        if ! [ -f /breeze-data/node-tags.json ]; then
+            echo "ERROR: /breeze-data/node-tags.json is missing; check volume mounts and init-container."
+            let ERRORS++
+        fi
+    fi
+
+    # check if dev-tun device is present
+    if ! [ -c /dev/net/tun ]; then
+        echo "ERROR: /dev/net/tun device is missing; check volume mounts."
+        let ERRORS++
+    fi
+
+    # check if required env vars are present
+    if ! $(env | grep -q 'BREEZE_RUNTIME=kubernetes' && env | grep -q 'BREEZE_K8S_TUNHUB_CLIENT=enabled'); then
+        echo "ERROR: check the required environment variables."
+        let ERRORS++
+    fi
+
+    # check tiny init process
+    if ! $(ps ax | grep -q '[t]ini'); then
+        echo "WARNING: 'tini' process is missing."
+    fi
+
+    echo $ERRORS
+    [[ ERRORS -eq 0 ]] || exit 1
+
+    echo "Starting Breeze daemon..."
+    /opt/breeze-agent/breeze-daemon
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,7 +59,7 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: breeze-agent
-    app.kubernetes.io/version: v1.0
+    app.kubernetes.io/version: v1.2
 spec:
   replicas: 1
   selector:
@@ -24,7 +69,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: breeze-agent
-        app.kubernetes.io/version: v1.0
+        app.kubernetes.io/version: v1.2
     spec:
       volumes:
       - name: breeze-config
@@ -34,10 +79,15 @@ spec:
         hostPath:
           path: /dev/net/tun
           type: CharDevice
+      - name: entrypoint
+        configMap:
+          name: breeze-entrypoint
+          defaultMode: 0744
       containers:
       - name: breeze-agent
         image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
         imagePullPolicy: Always
+        args: ["/scripts/entrypoint.sh"]
         resources:
           requests:
             memory: "64Mi"
@@ -51,6 +101,8 @@ spec:
           subPath: breeze-tags
         - name: dev-tun
           mountPath: /dev/net/tun
+        - name: entrypoint
+          mountPath: /scripts
         env:
           - name: BREEZE_RUNTIME
             value: kubernetes
@@ -73,5 +125,3 @@ spec:
           initialDelaySeconds: 900
           periodSeconds: 60
           failureThreshold: 60
-      # imagePullSecrets:
-      # - name: IMAGE_PULL_SECRETS_NAME
