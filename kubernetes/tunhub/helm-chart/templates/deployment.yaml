@@ -23,7 +23,11 @@ spec:
         hostPath:
           path: /dev/net/tun
           type: CharDevice
-      {{- if eq .Values.platform "eks"}}
+      - name: entrypoint
+        configMap:
+          name: breeze-entrypoint
+          defaultMode: 0755
+      {{- if eq .Values.platform "eks" }}
       {{- if .Values.eksMetadataAccess }}
       - name: breeze-data
         emptyDir: {}
@@ -43,6 +47,7 @@ spec:
       containers:
       - name: {{ .Release.Name }}
         image: {{ .Values.containerRegistryHostname }}/breeze-agent:latest
+        args: ["/scripts/entrypoint.sh"]
         imagePullPolicy: Always
         resources:
           requests:
@@ -54,6 +59,8 @@ spec:
         volumeMounts:
         - name: dev-tun
           mountPath: /dev/net/tun
+        - name: entrypoint
+          mountPath: /scripts
         {{- if eq .Values.platform "eks"}}
         {{- if .Values.eksMetadataAccess }}
         - name: breeze-data
@@ -74,9 +81,15 @@ spec:
           - name: BREEZE_K8S_TUNHUB_CLIENT
             value: enabled
         securityContext:
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 10000
           privileged: false
           capabilities:
-            add: ["NET_ADMIN"]
+            add: [
+              "NET_ADMIN",
+              "NET_RAW"
+            ]
         readinessProbe:
           exec:
             command:

@@ -12,12 +12,23 @@ RUN apt-get update && \
 ENV TINI_VERSION v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
 
 # configure breeze agent
 COPY ./breeze-agent/ /opt/breeze-agent/
 COPY ./bin/breeze-daemon /opt/breeze-agent
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh; sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
+RUN sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
 
-CMD [ "./entrypoint.sh" ]
+# add linux capabilities
+RUN setcap cap_net_admin+ep /usr/sbin/openvpn \
+    && setcap cap_net_admin,cap_net_raw+ep /usr/sbin/xtables-legacy-multi \
+    && chmod u+s /bin/ip
+
+# create breeze user
+RUN useradd --uid 10000 breeze \
+    && chown -R breeze. /opt/breeze-agent/ \
+    && chown breeze /run
+
+USER 10000
+
+ENTRYPOINT ["/tini", "--"]
+CMD [ "/opt/breeze-agent/breeze-daemon" ]

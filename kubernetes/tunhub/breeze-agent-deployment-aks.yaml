@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: breeze-agent
-    app.kubernetes.io/version: v1.0
+    app.kubernetes.io/version: v1.2
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: breeze-agent
-        app.kubernetes.io/version: v1.0
+        app.kubernetes.io/version: v1.2
     spec:
       volumes:
       - name: dev-tun
@@ -46,9 +46,15 @@ spec:
           - name: BREEZE_K8S_TUNHUB_CLIENT
             value: enabled
         securityContext:
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 10000
           privileged: false
           capabilities:
-            add: ["NET_ADMIN"]
+            add: [
+              "NET_ADMIN",
+              "NET_RAW"
+            ]
         readinessProbe:
           exec:
             command:
