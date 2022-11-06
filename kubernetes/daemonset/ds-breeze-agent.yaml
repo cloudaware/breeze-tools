@@ -1,7 +1,113 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    iam.gke.io/gcp-service-account: breeze-ds@PROJECT_ID.iam.gserviceaccount.com
+  name: breeze-ds
+  namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-ds-cm
+data:
+  init-entrypoint.sh: |
+    #!/bin/sh
+
+    set -e
+
+    ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/root}"
+
+    echo "Installing dependencies"
+    apk add curl python3 openssh
+    # apk add curl python3 sfdisk e2fsprogs openssh vim
+
+    echo "Installing gcloud SDK"
+    cd /tmp
+    curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-400.0.0-linux-x86_64.tar.gz
+    tar -xf google-cloud-cli-400.0.0-linux-x86_64.tar.gz
+    CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./google-cloud-sdk/install.sh --quiet
+    export PATH=$(pwd)/google-cloud-sdk/bin:$PATH
+
+    echo "Getting node metadata"
+    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')"
+    if [ "$NODE_NAME" = 'Not Found' ]; then
+        NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/hostname -H 'Metadata-Flavor: Google' | awk -F "." '{print $1}')"
+    fi
+    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F "/" '{print $4}')"
+
+    echo "Setting up disks"
+    DISK_NAME="$NODE_NAME-breeze"
+
+    if ! gcloud compute disks list --filter="name:$DISK_NAME" | grep "$DISK_NAME" > /dev/null; then
+        echo "Creating $DISK_NAME"
+        gcloud compute disks create "$DISK_NAME" --size=10 --zone="$ZONE"
+    else
+        echo "$DISK_NAME already exists"
+    fi
+
+    if ! gcloud compute instances describe "$NODE_NAME" --zone "$ZONE" --format '(disks[].source)' | grep "$DISK_NAME" > /dev/null; then
+        echo "Attaching $DISK_NAME to $NODE_NAME"
+        gcloud compute instances attach-disk "$NODE_NAME" --disk "$DISK_NAME" --zone "$ZONE" --device-name=sdf
+    else
+        echo "$DISK_NAME is already attached to $NODE_NAME"
+    fi
+    check_1=$(chroot "${ROOT_MOUNT_DIR}" lsblk | grep -q '^sdf' && echo 0 || echo 1)
+    if [ "$check_1" == 0 ]; then
+        dev_name="/dev/sdf"
+    else
+        dev_name=/dev/$(chroot "${ROOT_MOUNT_DIR}" lsblk | awk '/^sd/{print $1}' | sort | tail -1)
+    fi
+
+    check_2=$(chroot "${ROOT_MOUNT_DIR}" lsblk | grep -q breeze-disk && echo 0 || echo 1)
+    if [ "$check_2" == 1 ]; then
+        echo "Mounting $DISK_NAME"
+        chroot "${ROOT_MOUNT_DIR}" mkdir -p /mnt/disks/breeze-disk
+        chroot "${ROOT_MOUNT_DIR}" mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard ${dev_name}
+        chroot "${ROOT_MOUNT_DIR}" mount ${dev_name} /mnt/disks/breeze-disk
+        chroot "${ROOT_MOUNT_DIR}" chmod a+w /mnt/disks/breeze-disk
+    else
+        echo "$DISK_NAME is already mounted"
+    fi
+
+    if [ ! -d "/tmp/root/mnt/disks/breeze-disk/breeze-agent" ]; then
+        echo "Installing Breeze Agent"
+        sed -i 's@/opt@/mnt/disks/breeze-disk@' /tmp/breeze-agent/app.sh /tmp/breeze-agent/install/systemd/breeze-agent.service
+        sed -i "/ExecStart/s@/usr/bin/bash\s-c\s\x27@/bin/bash -c 'mount ${dev_name} /mnt/disks/breeze-disk 2>/dev/null; @" /tmp/breeze-agent/install/systemd/breeze-agent.service
+        cp -rv /tmp/breeze-agent ${ROOT_MOUNT_DIR}/mnt/disks/breeze-disk
+        systemd_service_file='/etc/systemd/system/breeze-agent.service'
+        echo "creating systemd service file ${systemd_service_file}"
+        chroot "${ROOT_MOUNT_DIR}" cp -v /mnt/disks/breeze-disk/breeze-agent/install/systemd/breeze-agent.service $systemd_service_file
+        systemd_timer_file='/etc/systemd/system/breeze-agent.timer'
+        echo "creating systemd timer file ${systemd_timer_file}"
+        chroot "${ROOT_MOUNT_DIR}" cp -v /mnt/disks/breeze-disk/breeze-agent/install/systemd/breeze-agent.timer $systemd_timer_file
+
+        ssh-keygen -t rsa -q -f ~/.ssh/google_compute_engine -N "" -C breeze -b 2048
+        gcloud compute ssh breeze@$NODE_NAME\
+        --internal-ip \
+        --zone=$ZONE \
+        -- "sudo systemctl daemon-reload; sudo systemctl start breeze-agent.service breeze-agent.timer"
+    else
+        echo "Breeze Agent is already installed"
+    fi
+
+    echo "Finished bootstraping the node."
+  logger-entrypoint.sh: |
+    #!/bin/sh
+
+    while true
+    do
+      if [ -f "/var/log/breeze-agent.log" ]; then
+        tail -f /var/log/breeze-agent.log | while read line; do echo $line; done
+      fi
+      sleep 300
+    done
+
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ds-breeze-agent
+  name: breeze-agent-ds
   namespace: default
 spec:
   selector:
@@ -12,26 +118,42 @@ spec:
       labels:
         app: breeze-agent
     spec:
-      containers:
-        - name: breeze-agent
-          image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
-          imagePullPolicy: Always
-          volumeMounts:
-          - name: host-fs-opt
-            mountPath: /opt
-          - name: host-fs-etc
-            mountPath: /etc
-          - name: host-fs-var-log
-            mountPath: /var/log
+      serviceAccountName: breeze-ds
+      nodeSelector:
+        iam.gke.io/gke-metadata-server-enabled: "true"
       volumes:
-      - name: host-fs-opt
+      - name: breeze-ds-config
+        configMap:
+          name: breeze-ds-cm
+          defaultMode: 0744
+      - name: root-mount
         hostPath:
-          path: /opt
-      - name: host-fs-etc
-        hostPath:
-          path: /etc
-      - name: host-fs-var-log
+          path: /
+      - name: log-mount
         hostPath:
           path: /var/log
-      imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME
+      initContainers:
+        - name: breeze-ds-init
+          image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
+          imagePullPolicy: Always
+          command: ["/scripts/init-entrypoint.sh"]
+          env:
+          - name: ROOT_MOUNT_DIR
+            value: /tmp/root
+          volumeMounts:
+          - name: root-mount
+            mountPath: /tmp/root
+          - name: breeze-ds-config
+            mountPath: /scripts
+          securityContext:
+            privileged: true
+      containers:
+        - name: breeze-ds
+          image: alpine:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/scripts/logger-entrypoint.sh"]
+          volumeMounts:
+          - name: log-mount
+            mountPath: /var/log
+          - name: breeze-ds-config
+            mountPath: /scripts
