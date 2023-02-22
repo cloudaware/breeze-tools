@@ -16,6 +16,13 @@ spec:
         - name: breeze-agent
           image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
           imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
           volumeMounts:
           - name: host-fs-opt
             mountPath: /opt
