@@ -30,6 +30,11 @@ spec:
             mountPath: /etc
           - name: host-fs-var-log
             mountPath: /var/log
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10000
+            runAsGroup: 10000
+            privileged: false
       volumes:
       - name: host-fs-opt
         hostPath:
