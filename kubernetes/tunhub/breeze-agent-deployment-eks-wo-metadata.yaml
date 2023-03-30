@@ -26,6 +26,8 @@ data:
             echo "ERROR: /breeze-data/node-tags.json is missing; check volume mounts and init-container."
             let ERRORS++
         fi
+    else
+        echo "skipping EKS specific check"
     fi
 
     # check if dev-tun device is present
@@ -82,7 +84,7 @@ spec:
       - name: entrypoint
         configMap:
           name: breeze-entrypoint
-          defaultMode: 0744
+          defaultMode: 0755
       containers:
       - name: breeze-agent
         image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
@@ -113,9 +115,15 @@ spec:
           - name: BREEZE_K8S_TUNHUB_CLIENT
             value: enabled
         securityContext:
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 10000
           privileged: false
           capabilities:
-            add: ["NET_ADMIN"]
+            add: [
+              "NET_ADMIN",
+              "NET_RAW"
+            ]
         readinessProbe:
           exec:
             command:

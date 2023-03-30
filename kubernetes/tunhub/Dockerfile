@@ -16,8 +16,7 @@ RUN chmod +x /tini
 # configure breeze agent
 COPY ./breeze-agent/ /opt/breeze-agent/
 COPY ./bin/breeze-daemon /opt/breeze-agent
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh; sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
+RUN sed -i "/log_level/s/2/${log_level}/" /opt/breeze-agent/etc/agent.conf
 
 # add linux capabilities
 RUN setcap cap_net_admin+ep /usr/sbin/openvpn \
@@ -28,7 +27,8 @@ RUN setcap cap_net_admin+ep /usr/sbin/openvpn \
 RUN useradd --uid 10000 breeze \
     && chown -R breeze. /opt/breeze-agent/ \
     && chown breeze /run
+
 USER 10000
 
 ENTRYPOINT ["/tini", "--"]
-CMD [ "./entrypoint.sh" ]
+CMD [ "/opt/breeze-agent/breeze-daemon" ]

@@ -15,10 +15,10 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     tar xvzf breeze-agent.example.version.0.x86_64.linux.tgz
     ```
 
-1. Build the Docker images:
+1. Build Docker image:
 
     ```bash
-    docker build -t breeze-agent -f Dockerfile.breeze-agent .
+    docker build -t breeze-agent .
     ```
 
 1. Push the image to your **private** Docker container registry:
@@ -26,15 +26,6 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     ```bash
     docker tag breeze-agent:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
     docker push breeze-agent:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
-    ```
-
-1. If you use EKS, also build and push Breeze init image:
-
-    ```
-    docker build -t breeze-agent-init -f Dockerfile.breeze-agent-init .
-    docker tag breeze-agent-init:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
-    docker push breeze-agent-init:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
-    
     ```
 
 # Run Deployment
