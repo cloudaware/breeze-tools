@@ -1,6 +1,68 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: get-node-tags-py
+data:
+  get_node_tags.py: |
+    import boto3
+    import json
+
+    from botocore.exceptions import NoCredentialsError
+    from urllib.request import Request, urlopen
+
+    METADATA_ENDPOINT = 'http://169.254.169.254/latest'
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/api/token', method='PUT')
+        request.add_header('X-aws-ec2-metadata-token-ttl-seconds', '60')
+        token = urlopen(request).read().decode()
+    except Exception as e:
+        print(e.__class__.__module__, e.__class__.__name__, e.args)
+        raise Exception('Failed to get IDMSv2 token')
+
+    region, instance_id = None, None
+    errors = []
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/meta-data/placement/region')
+        request.add_header('X-aws-ec2-metadata-token', token)
+        region = urlopen(request).read().decode()
+    except Exception as e:
+        errors.append(f'Failed to get region: {e}')
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/meta-data/instance-id')
+        request.add_header('X-aws-ec2-metadata-token', token)
+        instance_id = urlopen(request).read().decode()
+    except Exception as e:
+        errors.append(f'Failed to get instnce ID: {e}')
+
+    if not all([region, instance_id]):
+        raise Exception(f'Errors: {errors}')
+
+    try:
+        client = boto3.client('ec2', region_name=region)
+        response = client.describe_tags(
+            Filters=[
+                {
+                    'Name': 'resource-id',
+                    'Values': [instance_id]
+                },
+            ]
+        )
+    except NoCredentialsError as e:
+        print(e.__class__.__module__, e.__class__.__name__, e.args)
+        exit(1)
+    except Exception as e:
+        raise(e)
+
+    with open('/breeze-data/node-tags.json', 'w') as file:
+        json.dump(list(map(lambda x: dict({x.get('Key'): x.get('Value')}), response.get('Tags'))), file)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: breeze-entrypoint
 data:
   entrypoint.sh: |
@@ -52,7 +114,7 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: breeze-agent
-    app.kubernetes.io/version: v1.2
+    app.kubernetes.io/version: v1.3
 spec:
   replicas: 1
   selector:
@@ -62,7 +124,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: breeze-agent
-        app.kubernetes.io/version: v1.2
+        app.kubernetes.io/version: v1.3
     spec:
       volumes:
       - name: breeze-data
@@ -75,13 +137,21 @@ spec:
         configMap:
           name: breeze-entrypoint
           defaultMode: 0755
+      - name: init
+        configMap:
+          name: get-node-tags-py
+          defaultMode: 0755
       initContainers:
       - name: breeze-agent-init
-        image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-init:latest
-        imagePullPolicy: Always
+        image: python:3.10.10-alpine3.17
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args: ["-c", "pip install --no-cache-dir boto3 && python3 /scripts/get_node_tags.py"]
         volumeMounts:
         - name: breeze-data
           mountPath: /breeze-data
+        - name: init
+          mountPath: /scripts
       containers:
       - name: breeze-agent
         image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
