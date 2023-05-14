@@ -76,10 +76,10 @@ data:
     try:
         request = Request(f'{METADATA_ENDPOINT}/api/token', method='PUT')
         request.add_header('X-aws-ec2-metadata-token-ttl-seconds', '60')
-        token = urlopen(request).read().decode()
+        token = urlopen(request, timeout=5).read().decode()
     except Exception as e:
         print(e.__class__.__module__, e.__class__.__name__, e.args)
-        raise Exception('Failed to get IDMSv2 token')
+        raise Exception(f'Failed to get IDMSv2 token: {e}')
 
     region, instance_id = None, None
     errors = []
@@ -87,19 +87,19 @@ data:
     try:
         request = Request(f'{METADATA_ENDPOINT}/meta-data/placement/region')
         request.add_header('X-aws-ec2-metadata-token', token)
-        region = urlopen(request).read().decode()
+        region = urlopen(request, timeout=5).read().decode()
     except Exception as e:
         errors.append(f'Failed to get region: {e}')
 
     try:
         request = Request(f'{METADATA_ENDPOINT}/meta-data/instance-id')
         request.add_header('X-aws-ec2-metadata-token', token)
-        instance_id = urlopen(request).read().decode()
+        instance_id = urlopen(request, timeout=5).read().decode()
     except Exception as e:
         errors.append(f'Failed to get instnce ID: {e}')
 
     if not all([region, instance_id]):
-        raise Exception(f'Errors: {errors}')
+        raise Exception(f'Failed with errors: {errors}')
 
     try:
         client = boto3.client('ec2', region_name=region)
@@ -115,7 +115,7 @@ data:
         print(e.__class__.__module__, e.__class__.__name__, e.args)
         exit(1)
     except Exception as e:
-        raise(e)
+        raise Exception(f'Failed to describe tags: {e}')
 
     with open('/breeze-data/node-tags.json', 'w') as file:
         json.dump(list(map(lambda x: dict({x.get('Key'): x.get('Value')}), response.get('Tags'))), file)
