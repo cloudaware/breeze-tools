@@ -1,0 +1,43 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+
+    // Package document
+    "PackageDocument" : {
+      "Type" : "AWS::SSM::Document",
+      "Properties" : {
+        "Content" : "MANIFEST_JSON_AS_A_STRING",
+        "DocumentType" : "Package",
+        "Attachments" : [
+          {
+            "Key" : "SourceUrl",
+            "Values" : [ "s3://BUCKET/PATH_TO_THE DIRECTORY_CONTAINING_FILES" ]
+          }
+        ]
+      }
+    },
+
+    // Package association
+    "PocPackageAssociation" : {
+      "Type" : "AWS::SSM::Association",
+      "Properties" : {
+        "AssociationName" : "ASSOCIATION_NAME",
+        "Name" : "AWS-ConfigureAWSPackage",
+        "Parameters" : {
+          "action" : [ "Install" ],
+          "installationType" : [ "Uninstall and reinstall" ],
+          "name" : [ { "Ref" : "PackageDocument" } ]
+        },
+        "Targets" : [
+          {
+              "Key" : "InstanceIds",
+              "Values" : [
+                "INSTANCE_ID"
+              ]
+          }
+        ]
+      }
+    }
+
+  }
+}
