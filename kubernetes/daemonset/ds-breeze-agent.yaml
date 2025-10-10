@@ -1,7 +1,78 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-ds-cm
+data:
+  install.sh: |
+    #!/bin/sh
+    
+    echo_info() { printf "\n[info] %s\n\n" "$*"; }
+    echo_error() { printf "\n[error] %s\n\n" "$*"; exit 1; }
+    systemctl_cmd() {
+        nsenter --target 1 --mount --ipc -- systemctl "$@"
+    }
+    
+    if [ "$(id -u)" != "0" ]; then
+        echo_error 'run script as root user or use sudo'
+    fi
+    
+    echo_info 'copying agent files'
+    install_dir='/tmp/breeze-agent'
+    echo "Install dir is ${install_dir}"
+    destination_dir='/opt/breeze-agent'
+    umask 0022
+    mkdir -p "$destination_dir"
+    cp -rv "${install_dir}/." "${destination_dir}/"
+    
+    crontab_file='/etc/cron.d/breeze-agent'
+    systemd_status=$(nsenter --target 1 --mount --ipc systemctl is-system-running)
+    
+    if [ "$systemd_status" = "running" ] || [ "$systemd_status" = "degraded" ]; then
+        systemd_service_file='/etc/systemd/system/breeze-agent.service'
+        echo_info "creating systemd service file ${systemd_service_file}"
+        cp -v "${install_dir}/install/systemd/breeze-agent.service" "$systemd_service_file"
+    
+        systemd_timer_file='/etc/systemd/system/breeze-agent.timer'
+        echo_info "creating systemd timer file ${systemd_timer_file}"
+        cp -v "${install_dir}/install/systemd/breeze-agent.timer" "$systemd_timer_file"
+    
+        echo_info 'reload systemd daemon'
+        systemctl_cmd daemon-reload
+    
+        echo_info 'enable breeze-agent.timer'
+        systemctl_cmd enable breeze-agent.timer
+    
+        echo_info 'restart breeze-agent.timer'
+        systemctl_cmd restart breeze-agent.timer
+    
+        echo_info 'remove crontab file if exists'
+        rm -f "$crontab_file"
+    elif [ -d /etc/cron.d ]; then
+        echo_info "creating crontab file ${crontab_file}"
+        cp -v "${destination_dir}/install/cron/breeze-agent" "$crontab_file"
+    else
+        echo_error "can't create schedule"
+    fi
+    
+    if nsenter -t 1 -m -- sh -c '[ -f /etc/os-release ] && grep -q al2023 /etc/os-release'; then
+        echo_info 'Detected AL2023 host, installing libxcrypt-compat'
+        nsenter --target 1 --mount --uts --ipc --pid -- yum -y install libxcrypt-compat
+    fi
+  logger.sh: |
+    #!/bin/sh
+    while true
+    do
+      if [ -f "/var/log/breeze-agent.log" ]; then
+        tail -f /var/log/breeze-agent.log | while read line; do echo $line; done
+      fi
+      sleep 300
+    done
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ds-breeze-agent
+  name: breeze-agent-ds
   namespace: default
 spec:
   selector:
@@ -12,26 +83,56 @@ spec:
       labels:
         app: breeze-agent
     spec:
-      containers:
-        - name: breeze-agent
+      hostPID: true
+      hostIPC: true
+      volumes:
+        - name: breeze-ds-config
+          configMap:
+            name: breeze-ds-cm
+            defaultMode: 0744
+        - name: host-fs-opt
+          hostPath:
+            path: /opt
+        - name: host-fs-etc
+          hostPath:
+            path: /etc
+        - name: host-fs-var-log
+          hostPath:
+            path: /var/log
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+      initContainers:
+        - name: init
           image: CONTAINER_REGISTRY_HOSTNAME/breeze-agent-ds:latest
           imagePullPolicy: Always
+          command: ["/scripts/install.sh"]
           volumeMounts:
-          - name: host-fs-opt
-            mountPath: /opt
-          - name: host-fs-etc
-            mountPath: /etc
-          - name: host-fs-var-log
-            mountPath: /var/log
-      volumes:
-      - name: host-fs-opt
-        hostPath:
-          path: /opt
-      - name: host-fs-etc
-        hostPath:
-          path: /etc
-      - name: host-fs-var-log
-        hostPath:
-          path: /var/log
-      imagePullSecrets:
-      - name: IMAGE_PULL_SECRETS_NAME
+            - name: breeze-ds-config
+              mountPath: /scripts
+            - name: host-fs-var-log
+              mountPath: /var/log
+            - name: host-fs-opt
+              mountPath: /opt
+            - name: host-fs-etc
+              mountPath: /etc
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+          securityContext:
+            privileged: false
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - SYS_PTRACE
+      containers:
+        - name: logger
+          image: alpine:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/scripts/logger.sh"]
+          volumeMounts:
+            - name: breeze-ds-config
+              mountPath: /scripts
+            - name: host-fs-var-log
+              mountPath: /var/log
