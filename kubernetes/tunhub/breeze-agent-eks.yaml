@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: get-node-tags-py
+data:
+  get_node_tags.py: |
+    import boto3
+    import json
+
+    from botocore.exceptions import NoCredentialsError
+    from urllib.request import Request, urlopen
+
+    METADATA_ENDPOINT = 'http://169.254.169.254/latest'
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/api/token', method='PUT')
+        request.add_header('X-aws-ec2-metadata-token-ttl-seconds', '60')
+        token = urlopen(request, timeout=5).read().decode()
+    except Exception as e:
+        print(e.__class__.__module__, e.__class__.__name__, e.args)
+        raise Exception(f'Failed to get IDMSv2 token: {e}')
+
+    region, instance_id = None, None
+    errors = []
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/meta-data/placement/region')
+        request.add_header('X-aws-ec2-metadata-token', token)
+        region = urlopen(request, timeout=5).read().decode()
+    except Exception as e:
+        errors.append(f'Failed to get region: {e}')
+
+    try:
+        request = Request(f'{METADATA_ENDPOINT}/meta-data/instance-id')
+        request.add_header('X-aws-ec2-metadata-token', token)
+        instance_id = urlopen(request, timeout=5).read().decode()
+    except Exception as e:
+        errors.append(f'Failed to get instnce ID: {e}')
+
+    if not all([region, instance_id]):
+        raise Exception(f'Failed with errors: {errors}')
+
+    try:
+        client = boto3.client('ec2', region_name=region)
+        response = client.describe_tags(
+            Filters=[
+                {
+                    'Name': 'resource-id',
+                    'Values': [instance_id]
+                },
+            ]
+        )
+    except NoCredentialsError as e:
+        print(e.__class__.__module__, e.__class__.__name__, e.args)
+        exit(1)
+    except Exception as e:
+        raise Exception(f'Failed to describe tags: {e}')
+
+    with open('/breeze-data/node-tags.json', 'w') as file:
+        json.dump(list(map(lambda x: dict({x.get('Key'): x.get('Value')}), response.get('Tags'))), file)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-entrypoint
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+
+    ERRORS=0
+
+    echo "Checking prerequisites..."
+
+    # check if node-tags file on breeze-data volume is mounted for EKS
+    if ! $(env | grep -qF 'cluster.arn' /opt/breeze-agent/etc/tags); then
+        echo "Running EKS specific checks..."
+        if ! [ -f /breeze-data/node-tags.json ]; then
+            echo "ERROR: /breeze-data/node-tags.json is missing; check volume mounts and init-container."
+            let ERRORS++
+        fi
+    else
+        echo "skipping EKS specific check"
+    fi
+
+    # check if dev-tun device is present
+    if ! [ -c /dev/net/tun ]; then
+        echo "ERROR: /dev/net/tun device is missing; check volume mounts."
+        let ERRORS++
+    fi
+
+    # check if required env vars are present
+    if ! $(env | grep -q 'BREEZE_RUNTIME=kubernetes' && env | grep -q 'BREEZE_K8S_TUNHUB_CLIENT=enabled'); then
+        echo "ERROR: check the required environment variables."
+        let ERRORS++
+    fi
+
+    # check tiny init process
+    if ! $(ps ax | grep -q '[t]ini'); then
+        echo "WARNING: 'tini' process is missing."
+    fi
+
+    echo $ERRORS
+    [[ ERRORS -eq 0 ]] || exit 1
+
+    echo "Starting Breeze daemon..."
+    /opt/breeze-agent/breeze-daemon
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeze-agent
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-agent
+    app.kubernetes.io/version: v1.3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-agent
+        app.kubernetes.io/version: v1.3
+    spec:
+      volumes:
+      - name: breeze-data
+        emptyDir: {}
+      - name: dev-tun
+        hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+      - name: entrypoint
+        configMap:
+          name: breeze-entrypoint
+          defaultMode: 0755
+      - name: init
+        configMap:
+          name: get-node-tags-py
+          defaultMode: 0755
+      initContainers:
+      - name: breeze-agent-init
+        image: python:3.10.10-alpine3.17
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args: ["-c", "pip install --no-cache-dir boto3 && python3 /scripts/get_node_tags.py"]
+        volumeMounts:
+        - name: breeze-data
+          mountPath: /breeze-data
+        - name: init
+          mountPath: /scripts
+      containers:
+      - name: breeze-agent
+        image: registry.example.com/breeze-agent:redacted  # REDACTED placeholder — replace with your registry hostname and image version before apply
+        imagePullPolicy: IfNotPresent
+        args: ["/scripts/entrypoint.sh"]
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: breeze-data
+          mountPath: /breeze-data
+        - name: dev-tun
+          mountPath: /dev/net/tun
+        - name: entrypoint
+          mountPath: /scripts
+        env:
+          - name: BREEZE_RUNTIME
+            value: kubernetes
+          - name: BREEZE_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: BREEZE_K8S_TUNHUB_CLIENT
+            value: enabled
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 10000
+          privileged: false
+          capabilities:
+            add: [
+              "NET_ADMIN",
+              "NET_RAW"
+            ]
+        readinessProbe:
+          exec:
+            command:
+            - grep
+            - zcat
+            - "/proc/net/dev"
+          initialDelaySeconds: 900
+          periodSeconds: 60
+          failureThreshold: 60

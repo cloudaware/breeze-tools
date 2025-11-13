@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-config
+  namespace: default
+data:
+  breeze-tags: |
+    eks.cluster.arn=<EKS_CLUSTER_ARN>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-entrypoint
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+
+    ERRORS=0
+
+    echo "Checking prerequisites..."
+
+    # check if node-tags file on breeze-data volume is mounted for EKS
+    if ! $(env | grep -qF 'cluster.arn' /opt/breeze-agent/etc/tags); then
+        echo "Running EKS specific checks..."
+        if ! [ -f /breeze-data/node-tags.json ]; then
+            echo "ERROR: /breeze-data/node-tags.json is missing; check volume mounts and init-container."
+            let ERRORS++
+        fi
+    else
+        echo "skipping EKS specific check"
+    fi
+
+    # check if dev-tun device is present
+    if ! [ -c /dev/net/tun ]; then
+        echo "ERROR: /dev/net/tun device is missing; check volume mounts."
+        let ERRORS++
+    fi
+
+    # check if required env vars are present
+    if ! $(env | grep -q 'BREEZE_RUNTIME=kubernetes' && env | grep -q 'BREEZE_K8S_TUNHUB_CLIENT=enabled'); then
+        echo "ERROR: check the required environment variables."
+        let ERRORS++
+    fi
+
+    # check tiny init process
+    if ! $(ps ax | grep -q '[t]ini'); then
+        echo "WARNING: 'tini' process is missing."
+    fi
+
+    echo $ERRORS
+    [[ ERRORS -eq 0 ]] || exit 1
+
+    echo "Starting Breeze daemon..."
+    /opt/breeze-agent/breeze-daemon
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeze-agent
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-agent
+    app.kubernetes.io/version: v1.3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-agent
+        app.kubernetes.io/version: v1.3
+    spec:
+      volumes:
+      - name: breeze-config
+        configMap:
+          name: breeze-config
+      - name: dev-tun
+        hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+      - name: entrypoint
+        configMap:
+          name: breeze-entrypoint
+          defaultMode: 0755
+      containers:
+      - name: breeze-agent
+        image: registry.example.com/breeze-agent:redacted  # REDACTED placeholder — replace with your registry hostname and image version before apply
+        imagePullPolicy: IfNotPresent
+        args: ["/scripts/entrypoint.sh"]
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: breeze-config
+          mountPath: /opt/breeze-agent/etc/tags
+          subPath: breeze-tags
+        - name: dev-tun
+          mountPath: /dev/net/tun
+        - name: entrypoint
+          mountPath: /scripts
+        env:
+          - name: BREEZE_RUNTIME
+            value: kubernetes
+          - name: BREEZE_K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: BREEZE_K8S_TUNHUB_CLIENT
+            value: enabled
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 10000
+          privileged: false
+          capabilities:
+            add: [
+              "NET_ADMIN",
+              "NET_RAW"
+            ]
+        readinessProbe:
+          exec:
+            command:
+            - grep
+            - zcat
+            - "/proc/net/dev"
+          initialDelaySeconds: 900
+          periodSeconds: 60
+          failureThreshold: 60
