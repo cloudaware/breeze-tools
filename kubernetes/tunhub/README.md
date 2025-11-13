@@ -15,77 +15,70 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     tar xvzf breeze-agent.example.version.0.x86_64.linux.tgz
     ```
 
-1. Build Docker image:
+2. Build Docker image (general):
 
     ```bash
-    docker build -t breeze-agent .
+    docker build -t registry.example.com/breeze-agent:redacted -f Dockerfile .
     ```
 
-1. Push the image to your **private** Docker container registry:
+   - For AKS builds you **must** use `Dockerfile.aks`:
 
     ```bash
-    docker tag breeze-agent:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
-    docker push breeze-agent:latest CONTAINER_REGISTRY_HOSTNAME/breeze-agent:latest
+    docker build -t registry.example.com/breeze-agent:redacted -f Dockerfile.aks .
+    ```
+
+3. Push the image to your private registry:
+
+    ```bash
+    docker push registry.example.com/breeze-agent:redacted
+    ```
+
+   - Replace `registry.example.com/breeze-agent:redacted` with your actual registry host and image tag.
+
+# Required RBAC
+
+- Make sure to deploy `cloudaware-rbac.yaml`. This is required for the Breeze agent to function correctly:
+
+    ```bash
+    kubectl apply -f cloudaware-rbac.yaml
     ```
 
 # Run Deployment
 
-## EKS:
-1. Edit the deployment YAML file `breeze-agent-deployment-eks.yaml` and replace the next placeholders with the valid values:
+## EKS
 
-    * `CONTAINER_REGISTRY_HOSTNAME`
-    * `IMAGE_PULL_SECRETS_NAME` (optional)
+1. Make sure that the following AWS metadata endpoints are reachable:
+   - `latest/api/token`
+   - `latest/dynamic/instance-identity/document`
+   - `latest/meta-data/services/partition`
+   - `latest/meta-data/placement/region`
 
-2. Make sure that the following AWS metadata endpoints are reachable:
-```
-latest/api/token
-latest/dynamic/instance-identity/document
-latest/meta-data/services/partition
-latest/meta-data/placement/region
-```
+2. Ensure the node group IAM role allows `ec2:DescribeTags` or attach the required policy.
 
-3. Ensure that node group IAM role has the `ec2:DescribeTags` action or attach the next policy to the node group IAM role:
-
-   ```
-   {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": "ec2:DescribeTags",
-                "Resource": "*"
-            }
-        ]
-    }
-    ```
-
-4. Apply the configuration:
+3. Replace the image placeholder in the manifest with the actual value and apply the deployment:
 
     ```bash
-    kubectl create -f breeze-agent-deployment-eks.yaml
+    kubectl create -f breeze-agent-eks.yaml
     ```
 
-5. If access to metadata endpoints is forbidden Edit the deployment YAML file `breeze-agent-deployment-eks-wo-metadata.yaml` replace the next placeholders with the valid values:
+- If metadata access is forbidden, use `breeze-agent-eks-wo-metadata.yaml` (replace `<EKS_CLUSTER_ARN>` placeholder with an actual ARN ) and apply it.
 
-    * `CONTAINER_REGISTRY_HOSTNAME`
-    * `EKS_CLUSTER_ARN`
-    * `IMAGE_PULL_SECRETS_NAME` (optional)
+## AKS
 
-and apply the configuration:
-```bash
-kubectl create -f breeze-agent-deployment-eks-wo-metadata.yaml
-```
+1. Configure AKS-ACR integration (see Microsoft docs).
 
-## AKS:
-1. Edit the deployment YAML file `breeze-agent-deployment-aks.yaml` and replace the next placeholders with the valid values:
-
-    * `CONTAINER_REGISTRY_HOSTNAME`
-
-2. Set up the AKS to ACR integration:
-https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration
-
-3. Apply the configuration:
+2. Replace the image placeholder in the manifest with the actual value and apply the deployment:
 
     ```bash
-    kubectl create -f breeze-agent-deployment-aks.yaml
+    kubectl create -f breeze-agent-aks.yaml
+    ```
+
+## GKE
+
+1. Ensure cluster has required permissions to pull from the registry (use Workload Identity or image pull secrets).
+
+2. Replace the image placeholder in the manifest with the actual value and apply the deployment:
+
+    ```bash
+    kubectl create -f breeze-agent-gke.yaml
     ```
