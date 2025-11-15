@@ -54,9 +54,9 @@ spec:
       {{- end }}
       containers:
       - name: {{ .Release.Name }}
-        image: {{ .Values.containerRegistryHostname }}/breeze-agent:latest
+        image: {{ .Values.image }}
         args: ["/scripts/entrypoint.sh"]
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
             memory: {{ .Values.resources.requests.memory }}
@@ -89,9 +89,11 @@ spec:
           - name: BREEZE_K8S_TUNHUB_CLIENT
             value: enabled
         securityContext:
+          {{- if not (eq .Values.platform "aks") }}
           runAsNonRoot: true
           runAsUser: 10000
           runAsGroup: 10000
+          {{- end }}
           privileged: false
           capabilities:
             add: [
@@ -107,5 +109,3 @@ spec:
           initialDelaySeconds: 900
           periodSeconds: 60
           failureThreshold: 60
-        # imagePullSecrets:
-        # - name: {{ .Values.containerRegistrySecretsName }}

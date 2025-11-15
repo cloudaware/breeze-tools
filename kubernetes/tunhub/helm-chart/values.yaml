@@ -1,6 +1,6 @@
-version: v1.2.0
+version: v1.3.0
 
-# Edit platform value. Possible values: eks, aks
+# Edit platform value. Possible values: eks, aks, gke
 platform: eks
 
 # Required if platform=eks
@@ -9,9 +9,8 @@ eksMetadataAccess: true
 # Required if platform=eks and eksMetadataAccess=false
 eksClusterArn: ""
 
-# Edit container registry hostname and secrets name
-containerRegistryHostname: CONTAINER_REGISTRY_HOSTNAME
-# containerRegistrySecretsName: CONTAINER_REGISTRY_SECRETS_NAME
+# Replace with your registry hostname and image version before apply
+image: registry.example.com/breeze-agent:redacted
 
 # Edit resource limits
 resources:
