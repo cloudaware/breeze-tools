@@ -62,6 +62,19 @@ spec:
         configMap:
           name: breeze-entrypoint
           defaultMode: 0755
+## Uncomment to mount TLS certificates from Kubernetes secrets
+#      - name: ssl-cert
+#        secret:
+#          secretName: breeze-tls-secret
+#          items:
+#          - key: tls.crt
+#            path: breeze-agent.crt
+#      - name: ssl-key
+#        secret:
+#          secretName: breeze-tls-secret
+#          items:
+#          - key: tls.key
+#            path: breeze-agent.key
       containers:
       - name: breeze-agent
         image: registry.example.com/breeze-agent:redacted  # REDACTED placeholder — replace with your registry hostname and image version before apply
@@ -70,15 +83,24 @@ spec:
         resources:
           requests:
             memory: "64Mi"
-            cpu: "250m"
+            cpu: "30m"
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "50m"
         volumeMounts:
         - name: dev-tun
           mountPath: /dev/net/tun
         - name: entrypoint
           mountPath: /scripts
+## Uncomment to mount TLS certificates from Kubernetes secrets
+#        - name: ssl-cert
+#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.crt
+#          subPath: breeze-agent.crt
+#          readOnly: true
+#        - name: ssl-key
+#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.key
+#          subPath: breeze-agent.key
+#          readOnly: true
         env:
           - name: BREEZE_RUNTIME
             value: kubernetes

@@ -13,11 +13,34 @@ spec:
       app.kubernetes.io/name: {{ .Release.Name }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
         app.kubernetes.io/name: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Values.version | default .Chart.AppVersion}}
     spec:
       serviceAccountName: {{ template "breeze-agent.serviceAccount" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       volumes:
       - name: dev-tun
         hostPath:
@@ -27,6 +50,20 @@ spec:
         configMap:
           name: breeze-entrypoint
           defaultMode: 0755
+      {{- if .Values.tls.fromSecrets }}
+      - name: tls-cert
+        secret:
+          secretName: {{ .Values.tls.cert.secretName }}
+          items:
+          - key: {{ .Values.tls.cert.key }}
+            path: breeze-agent.crt
+      - name: tls-key
+        secret:
+          secretName: {{ .Values.tls.key.secretName }}
+          items:
+          - key: {{ .Values.tls.key.key }}
+            path: breeze-agent.key
+      {{- end }}
       {{- if eq .Values.platform "eks" }}
       {{- if .Values.eksMetadataAccess }}
       - name: breeze-data
@@ -69,6 +106,16 @@ spec:
           mountPath: /dev/net/tun
         - name: entrypoint
           mountPath: /scripts
+        {{- if .Values.tls.fromSecrets }}
+        - name: tls-cert
+          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.crt
+          subPath: breeze-agent.crt
+          readOnly: true
+        - name: tls-key
+          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.key
+          subPath: breeze-agent.key
+          readOnly: true
+        {{- end }}
         {{- if eq .Values.platform "eks" }}
         {{- if .Values.eksMetadataAccess }}
         - name: breeze-data

@@ -85,6 +85,34 @@ spec:
         configMap:
           name: breeze-entrypoint
           defaultMode: 0755
+## Uncomment to mount TLS certificates from Kubernetes secrets
+#      - name: ssl-cert
+#        secret:
+#          secretName: breeze-tls-secret
+#          items:
+#          - key: tls.crt
+#            path: breeze-agent.crt
+#      - name: ssl-key
+#        secret:
+#          secretName: breeze-tls-secret
+#          items:
+#          - key: tls.key
+#            path: breeze-agent.key
+      - name: init
+        configMap:
+          name: get-node-tags-py
+          defaultMode: 0755
+      initContainers:
+      - name: breeze-agent-init
+        image: python:3.10.10-alpine3.17
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args: ["-c", "pip install --no-cache-dir boto3 && python3 /scripts/get_node_tags.py"]
+        volumeMounts:
+        - name: breeze-data
+          mountPath: /breeze-data
+        - name: init
+          mountPath: /scripts
       containers:
       - name: breeze-agent
         image: registry.example.com/breeze-agent:redacted  # REDACTED placeholder — replace with your registry hostname and image version before apply
@@ -93,10 +121,10 @@ spec:
         resources:
           requests:
             memory: "64Mi"
-            cpu: "250m"
+            cpu: "30m"
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "50m"
         volumeMounts:
         - name: breeze-config
           mountPath: /opt/breeze-agent/etc/tags
@@ -105,6 +133,15 @@ spec:
           mountPath: /dev/net/tun
         - name: entrypoint
           mountPath: /scripts
+## Uncomment to mount TLS certificates from Kubernetes secrets
+#        - name: ssl-cert
+#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.crt
+#          subPath: breeze-agent.crt
+#          readOnly: true
+#        - name: ssl-key
+#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.key
+#          subPath: breeze-agent.key
+#          readOnly: true
         env:
           - name: BREEZE_RUNTIME
             value: kubernetes

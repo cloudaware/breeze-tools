@@ -1,4 +1,4 @@
-version: v1.3.0
+version: v2.0
 
 # Edit platform value. Possible values: eks, aks, gke
 platform: eks
@@ -9,6 +9,20 @@ eksMetadataAccess: true
 # Required if platform=eks and eksMetadataAccess=false
 eksClusterArn: ""
 
+# TLS configuration for GKE platform
+# Set to true to mount TLS certificates from Kubernetes secrets
+# Set to false to use TLS certificates baked into the Docker image
+tls:
+  fromSecrets: false
+  # Certificate secret configuration
+  cert:
+    secretName: "breeze-tls-cert"
+    key: "tls.crt"
+  # Private key secret configuration  
+  key:
+    secretName: "breeze-tls-key"
+    key: "tls.key"
+
 # Replace with your registry hostname and image version before apply
 image: registry.example.com/breeze-agent:redacted
 
@@ -16,10 +30,10 @@ image: registry.example.com/breeze-agent:redacted
 resources:
     requests:
         memory: "64Mi"
-        cpu: "250m"
+        cpu: "30m"
     limits:
         memory: "128Mi"
-        cpu: "500m"
+        cpu: "50m"
 
 serviceAccount:
     # Specifies whether a service account should be created
@@ -28,3 +42,15 @@ serviceAccount:
     annotations: {}
     # The name of the service account to use.
     name: ""
+
+# Node selection and scheduling
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod configuration
+podAnnotations: {}
+priorityClassName: ""
+
+# Image pull configuration
+imagePullSecrets: []
