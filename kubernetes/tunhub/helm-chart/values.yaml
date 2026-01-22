@@ -1,15 +1,17 @@
-version: v2.0
-
 # Edit platform value. Possible values: eks, aks, gke
 platform: eks
 
+# AWS EKS specific values
 # Required if platform=eks
 eksMetadataAccess: true
-
 # Required if platform=eks and eksMetadataAccess=false
 eksClusterArn: ""
 
-# TLS configuration for GKE platform
+# GCP GKE specific values
+# GKE Autopilot
+gkeAutopilot: false
+
+# TLS configuration
 # Set to true to mount TLS certificates from Kubernetes secrets
 # Set to false to use TLS certificates baked into the Docker image
 tls:

@@ -114,7 +114,7 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: breeze-agent
-    app.kubernetes.io/version: v1.3
+    app.kubernetes.io/version: v2.0
 spec:
   replicas: 1
   selector:
@@ -124,7 +124,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: breeze-agent
-        app.kubernetes.io/version: v1.3
+        app.kubernetes.io/version: v2.0
     spec:
       volumes:
       - name: breeze-data

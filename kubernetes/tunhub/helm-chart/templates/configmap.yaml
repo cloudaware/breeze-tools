@@ -8,6 +8,13 @@ data:
 
     ERRORS=0
 
+    {{- if .Values.gkeAutopilot }}
+    # create a tun device
+    mkdir -p /dev/net
+    mknod /dev/net/tun c 10 200
+    chmod 600 /dev/net/tun
+    {{- end }}
+
     echo "Checking prerequisites..."
 {{- if eq .Values.platform "eks" }}
     # check if node-tags file on breeze-data volume is mounted for EKS

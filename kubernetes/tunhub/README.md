@@ -21,10 +21,10 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     docker build -t registry.example.com/breeze-agent:redacted -f Dockerfile .
     ```
 
-   - For AKS builds you **must** use `Dockerfile.aks`:
+   - For AKS and GKE Autopilot builds you **must** use `Dockerfile.root`:
 
     ```bash
-    docker build -t registry.example.com/breeze-agent:redacted -f Dockerfile.aks .
+    docker build -t registry.example.com/breeze-agent:redacted -f Dockerfile.root .
     ```
 
 3. Push the image to your private registry:
@@ -65,6 +65,8 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
 
 ## AKS
 
+- For AKS remember to use `Dockerfile.root`
+
 1. Configure AKS-ACR integration (see Microsoft docs).
 
 2. Replace the image placeholder in the manifest with the actual value and apply the deployment:
@@ -82,3 +84,9 @@ Container runs a simple daemon which launches Breeze agent every 15 minutes.
     ```bash
     kubectl create -f breeze-agent-gke.yaml
     ```
+
+- For GKE Autopilot remember to use `Dockerfile.root`
+    ```bash
+    kubectl create -f breeze-agent-gke-autopilot.yaml
+    ```
+
