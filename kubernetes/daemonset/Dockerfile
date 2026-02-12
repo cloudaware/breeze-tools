@@ -1,4 +1,5 @@
-FROM alpine
+# syntax=docker/dockerfile:1
+FROM --platform=linux/amd64 alpine
 
 # arguments
 ARG log_level=1
