@@ -137,19 +137,19 @@ spec:
         configMap:
           name: breeze-entrypoint
           defaultMode: 0755
-## Uncomment to mount TLS certificates from Kubernetes secrets
-#      - name: ssl-cert
-#        secret:
-#          secretName: breeze-tls-secret
-#          items:
-#          - key: tls.crt
-#            path: breeze-agent.crt
-#      - name: ssl-key
-#        secret:
-#          secretName: breeze-tls-secret
-#          items:
-#          - key: tls.key
-#            path: breeze-agent.key
+      # Comment out the following two volumes if you don't want to mount TLS certificates from Kubernetes secrets
+      - name: ssl-cert
+        secret:
+          secretName: breeze-tls-secret
+          items:
+          - key: tls.crt
+            path: breeze-agent.crt
+      - name: ssl-key
+        secret:
+          secretName: breeze-tls-secret
+          items:
+          - key: tls.key
+            path: breeze-agent.key
       - name: init
         configMap:
           name: get-node-tags-py
@@ -184,15 +184,15 @@ spec:
           mountPath: /dev/net/tun
         - name: entrypoint
           mountPath: /scripts
-## Uncomment to mount TLS certificates from Kubernetes secrets
-#        - name: ssl-cert
-#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.crt
-#          subPath: breeze-agent.crt
-#          readOnly: true
-#        - name: ssl-key
-#          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.key
-#          subPath: breeze-agent.key
-#          readOnly: true
+        # Comment out the following two mounts if you don't want to mount TLS certificates from Kubernetes secrets
+        - name: ssl-cert
+          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.crt
+          subPath: breeze-agent.crt
+          readOnly: true
+        - name: ssl-key
+          mountPath: /opt/breeze-agent/etc/ssl/breeze-agent.key
+          subPath: breeze-agent.key
+          readOnly: true
         env:
           - name: BREEZE_RUNTIME
             value: kubernetes
