@@ -98,21 +98,6 @@ spec:
           items:
           - key: tls.key
             path: breeze-agent.key
-      - name: init
-        configMap:
-          name: get-node-tags-py
-          defaultMode: 0755
-      initContainers:
-      - name: breeze-agent-init
-        image: python:3.10.10-alpine3.17
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh"]
-        args: ["-c", "pip install --no-cache-dir boto3 && python3 /scripts/get_node_tags.py"]
-        volumeMounts:
-        - name: breeze-data
-          mountPath: /breeze-data
-        - name: init
-          mountPath: /scripts
       containers:
       - name: breeze-agent
         image: registry.example.com/breeze-agent:redacted  # REDACTED placeholder — replace with your registry hostname and image version before apply
