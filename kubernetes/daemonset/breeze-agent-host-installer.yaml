@@ -126,7 +126,7 @@ spec:
               memory: "128Mi"
               cpu: "10m"
             limits:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "100m"
           volumeMounts:
             - name: breeze-ds-config
