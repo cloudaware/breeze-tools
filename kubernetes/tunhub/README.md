@@ -88,11 +88,12 @@ If you prefer to include TLS certificates in the image (not recommended for secu
 
 1. Ensure the node group IAM role has `ec2:DescribeTags` permission
 
-2. Verify AWS metadata endpoints are accessible from pods:
-   - `latest/api/token`
-   - `latest/dynamic/instance-identity/document`
-   - `latest/meta-data/services/partition`
-   - `latest/meta-data/placement/region`
+2. Verify AWS metadata endpoints are accessible from pods. These paths are relative to the EC2 Instance Metadata Service (IMDS) base URL `http://169.254.169.254/`:
+   - `http://169.254.169.254/latest/api/token` — IMDSv2 session token (PUT request)
+   - `http://169.254.169.254/latest/dynamic/instance-identity/document` — instance identity document
+   - `http://169.254.169.254/latest/meta-data/services/partition` — AWS partition (e.g. `aws`, `aws-cn`)
+   - `http://169.254.169.254/latest/meta-data/instance-id` — EC2 instance ID
+   - `http://169.254.169.254/latest/meta-data/placement/region` — AWS region of the instance
 
 3. Update the image reference in `breeze-agent-eks.yaml`
 
@@ -131,3 +132,39 @@ If you prefer to include TLS certificates in the image (not recommended for secu
     ```
 
 **GKE Autopilot**: Use `Dockerfile.root` for builds and `breeze-agent-gke-autopilot.yaml` for deployment.
+
+## Verify Deployment
+
+The deployment includes a readiness probe that checks for the `zcat` tunnel interface. A pod reporting `1/1 Ready` means the VPN tunnel is established and the agent is working. Note that the readiness probe starts 15 minutes after the container starts, so allow time for the pod to become ready.
+
+1. Check pod status:
+
+    ```bash
+    kubectl get pods -l app.kubernetes.io/name=breeze-agent
+    ```
+
+   Wait for the pod to show `1/1` under the READY column.
+
+2. Check init container logs (EKS only):
+
+    ```bash
+    kubectl logs <pod-name> -c breeze-agent-init
+    ```
+
+   Should show successful tag retrieval without errors.
+
+3. Check main container logs:
+
+    ```bash
+    kubectl logs <pod-name> -c breeze-agent
+    ```
+
+   Expected output includes "Checking prerequisites..." followed by "Starting Breeze daemon..." with no ERROR lines.
+
+4. Confirm the tunnel interface exists:
+
+    ```bash
+    kubectl exec <pod-name> -- grep zcat /proc/net/dev
+    ```
+
+   If the `zcat` interface is listed, the VPN tunnel is up and connectivity is established.
