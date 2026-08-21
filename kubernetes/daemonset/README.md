@@ -21,7 +21,7 @@ The DaemonSet deploys a pod on each Kubernetes node with two components:
    - Mounts host directories: `/opt`, `/etc`, `/var/log`, and `/proc`
    - Copies agent files from the container to `/opt/breeze-agent` on the host
    - Configures systemd timer (preferred) or cron job to run the agent every 15 minutes
-   - Detects AL2023 hosts and installs required dependencies (libxcrypt-compat)
+   - Detects AL2023/RHEL 10 hosts and installs required dependencies (libxcrypt-compat)
    - Uses `nsenter` to interact with the host's systemd
 
 2. **Logger container** - Runs continuously to stream agent logs:

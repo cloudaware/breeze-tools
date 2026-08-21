@@ -55,8 +55,8 @@ data:
         echo_error "can't create schedule"
     fi
     
-    if nsenter -t 1 -m -- sh -c '[ -f /etc/os-release ] && grep -q al2023 /etc/os-release'; then
-        echo_info 'Detected AL2023 host, installing libxcrypt-compat'
+    if nsenter -t 1 -m -- sh -c '[ -f /etc/os-release ] && grep -Eq "al2023|el10" /etc/os-release'; then
+        echo_info 'Detected AL2023/EL10 host, installing libxcrypt-compat'
         nsenter --target 1 --mount --uts --ipc --pid -- yum -y install libxcrypt-compat
     fi
   logger.sh: |
