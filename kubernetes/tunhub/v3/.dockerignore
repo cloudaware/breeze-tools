@@ -1,0 +1,14 @@
+# The client certificate and key must never reach an image layer. Deleting them in a later RUN is
+# not enough: the earlier COPY layer still carries the file, and a later layer only adds a whiteout
+# marker, so 'docker save' recovers the key from any published image. Keeping them out of the build
+# context is what actually prevents that. They are mounted from a Kubernetes secret at runtime.
+#
+# To bake the certificates into an image on purpose, remove these two lines and add a COPY of them
+# as etc/breeze.crt and etc/breeze.key, see the alternative in README.md.
+breeze/runtime/etc/*.crt
+breeze/runtime/etc/*.key
+
+# the installer archive itself, unpacked next to it
+*.tgz
+
+.DS_Store
