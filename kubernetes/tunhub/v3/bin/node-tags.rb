@@ -80,7 +80,7 @@ module Breeze
 
         raise MissingClusterTag, 'none of the node tags names the cluster, expected a ' \
                                  'kubernetes.io/cluster/<name> tag with the value owned, or an ' \
-                                 'eks:cluster_name tag'
+                                 'eks:cluster-name tag'
       end
 
       # Whether the tags name the cluster the node belongs to. Mirrors the rule the agent applies in
@@ -91,7 +91,7 @@ module Breeze
       def cluster_tag?(tags)
         tags.any? do |tag|
           tag.any? do |key, value|
-            (key.match?(%r{kubernetes\.io/cluster/}) && value == 'owned') || key.match?(/eks:cluster_name/)
+            (key.match?(%r{kubernetes\.io/cluster/}) && value == 'owned') || key.match?(/eks:cluster-name/)
           end
         end
       end
