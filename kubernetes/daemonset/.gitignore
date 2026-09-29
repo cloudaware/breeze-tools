@@ -1,1 +1,9 @@
+*.tgz
 breeze-agent/**
+v3/breeze/**
+
+# the design record is internal, the customer facing document is v3/README.md
+v3/DESIGN.md
+
+# the test overlays carry our registries and cluster settings
+test/

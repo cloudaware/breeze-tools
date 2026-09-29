@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: breeze-host-installer-cos
+  namespace: default
+  labels:
+    app.kubernetes.io/name: breeze-host-installer-cos
+    app.kubernetes.io/version: "3.0"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: breeze-host-installer-cos
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: breeze-host-installer-cos
+        app.kubernetes.io/version: "3.0"
+    spec:
+      hostPID: true
+      # This manifest is for Container-Optimized OS nodes. In a cluster whose node pools are mixed,
+      # add the complementary selector to breeze-host-installer.yaml so that the two do not overlap
+      nodeSelector:
+        cloud.google.com/gke-os-distribution: cos
+      # Uncomment to install the agent on tainted nodes as well, control plane nodes among them
+      # tolerations:
+      #   - operator: Exists
+      volumes:
+        # /opt is part of the read-only root filesystem on this node image, the agent is installed
+        # on the stateful partition instead
+        - name: host-cloudaware
+          hostPath:
+            path: /var/lib/cloudaware
+            type: DirectoryOrCreate
+        # Comment out the following volume if the certificates are baked into the image
+        - name: breeze-tls
+          secret:
+            secretName: breeze-tls-secret
+            defaultMode: 0400
+            items:
+              - key: tls.crt
+                path: breeze.crt
+              - key: tls.key
+                path: breeze.key
+      initContainers:
+        - name: install
+          image: registry.example.com/breeze:host-installer-3.0
+          imagePullPolicy: Always
+          command: ["/usr/local/bin/host-install.sh"]
+          env:
+            - name: BREEZE_HOST_VARS
+              value: |
+                BREEZE_VERBOSE=true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: host-cloudaware
+              mountPath: /var/lib/cloudaware
+            # Comment out the following two mounts if the certificates are baked into the image
+            - name: breeze-tls
+              mountPath: /breeze/runtime/etc/breeze.crt
+              subPath: breeze.crt
+              readOnly: true
+            - name: breeze-tls
+              mountPath: /breeze/runtime/etc/breeze.key
+              subPath: breeze.key
+              readOnly: true
+          securityContext:
+            privileged: false
+            # Required on a node that enforces AppArmor, which is every GKE node and every Ubuntu
+            # node: the default profile of the container runtime denies the ptrace read of the init
+            # process of the node that nsenter needs. On a cluster older than Kubernetes 1.30,
+            # replace this with the annotation
+            # container.apparmor.security.beta.kubernetes.io/install: unconfined on the pod template
+            appArmorProfile:
+              type: Unconfined
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - SYS_PTRACE
+      containers:
+        - name: logger
+          image: registry.example.com/breeze:host-installer-3.0
+          imagePullPolicy: Always
+          command: ["/usr/local/bin/host-logger.sh"]
+          env:
+            - name: BREEZE_HOST_LOG_FILE
+              value: /var/lib/cloudaware/breeze/var/log/breeze.log
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "5m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+          volumeMounts:
+            - name: host-cloudaware
+              mountPath: /var/lib/cloudaware
+              readOnly: true
